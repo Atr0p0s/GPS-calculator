@@ -5,7 +5,6 @@
 #include <QGroupBox>
 #include <QLineEdit>
 #include <QSettings>
-#include <QCloseEvent>
 #include <QPointer>
 #include <QButtonGroup>
 #include <QLabel>

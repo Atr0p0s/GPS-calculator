@@ -25,14 +25,6 @@ GPScalculator::GPScalculator(QSettings* S, QWidget* parent)
     setLayout(vbox);
 }
 
-//void GPScalculator::closeEvent(QCloseEvent* event)
-//{
-//    Q_UNUSED(event)
-//    if (coord) {
-//        coord->close();
-//    }
-//}
-
 QGroupBox* GPScalculator::createDynamicCoordGroup()
 {
     QGroupBox* groupBox = new QGroupBox(tr("GPS Coordinates"), this);
@@ -250,7 +242,6 @@ void GPScalculator::slotOpenBenchmarkFile()
                     NMEA_D = NMEA_Data_Settings;
                     char data2[4096];
                     memset(data2, 0, 4096);
-//                    strcpy(data2, Text_NMEA.toLocal8Bit().data());
                     strncpy(data2, Text_NMEA.toLocal8Bit().data(), sizeof(data2));
                     nmea_recv(&ctx, data2, strlen(data2), &NMEA_D);
                     if(NMEA_D.GPGGA.latitude && NMEA_D.GPGGA.longitude) {
