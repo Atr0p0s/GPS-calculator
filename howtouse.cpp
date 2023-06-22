@@ -1,6 +1,7 @@
 #include <QPixMap>
 #include <QLabel>
 #include <QHBoxLayout>
+#include <QScreen>
 
 #include "howtouse.h"
 
@@ -10,7 +11,7 @@ HowToUse::HowToUse(QWidget* parent, Qt::WindowFlags f)
     QHBoxLayout* vbox = new QHBoxLayout(this);
 
     QLabel* imageLabel = new QLabel(this);
-    QPixmap image("../GPS-calculator/images/howtouse2.png");
+    QPixmap image(":/images/howtouse2.png");
     imageLabel->setPixmap(image);
     imageLabel->setAlignment(Qt::AlignTop);
 

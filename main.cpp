@@ -15,12 +15,12 @@ int main(int argc, char *argv[])
     const int lang = settings.value("language").toInt();
     if (lang != 0) {
         if (lang == MainWindow::UA) {
-            if (translator.load("../GPS-calculator/translations/main_ua.qm")) {
+            if (translator.load(":/translations/main_ua.qm")) {
                 QCoreApplication::installTranslator(&translator);
             }
         }
     } else {
-        if (translator.load("../GPS-calculator/translations/main_ua.qm")) {
+        if (translator.load(":/translations/main_ua.qm")) {
             QCoreApplication::installTranslator(&translator);
         }
     }

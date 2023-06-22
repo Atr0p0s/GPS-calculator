@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/howtouse2.png</file>
+        <file>translations/main_ua.qm</file>
+    </qresource>
+</RCC>
