@@ -10,6 +10,7 @@
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QPushButton>
+#include <QDebug>
 
 #include "Koord/Coord_QW.h"
 #include "gpscalculator.h"
@@ -23,6 +24,12 @@ GPScalculator::GPScalculator(QSettings* S, QWidget* parent)
     vbox->addWidget(createBenchmarkCoordGroup());
     vbox->addWidget(createResultsGroup());
     setLayout(vbox);
+    readSettings();
+}
+
+GPScalculator::~GPScalculator()
+{
+    writeSettings();
 }
 
 QGroupBox* GPScalculator::createDynamicCoordGroup()
@@ -299,6 +306,27 @@ void GPScalculator::createData(const QString& fileName, QMap<int, QList<double> 
             file.close();
         }
     }
+}
+
+void GPScalculator::readSettings()
+{
+    const int formatButtonId = settings->value("format_group", -1).toInt();
+    if (formatButtonId != -1) {
+        format_bgroup->button(formatButtonId)->setChecked(true);
+    }
+
+    const int geometryButtonId = settings->value("geometry_group", -1).toInt();
+    if (geometryButtonId != -1) {
+        geometry_bgroup->button(geometryButtonId)->setChecked(true);
+    }
+    qDebug() << "read" << formatButtonId << geometryButtonId;
+}
+
+void GPScalculator::writeSettings()
+{
+    qDebug() << "write" << format_bgroup->checkedId() << geometry_bgroup->checkedId();
+    settings->setValue("format_group", format_bgroup->checkedId());
+    settings->setValue("geometry_group", geometry_bgroup->checkedId());
 }
 
 void GPScalculator::slotCalculateGPS()

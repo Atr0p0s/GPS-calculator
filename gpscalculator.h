@@ -16,6 +16,7 @@ class GPScalculator : public QWidget
     Q_OBJECT
 public:
     explicit GPScalculator(QSettings*, QWidget* parent = nullptr);
+    ~GPScalculator();
 
 private slots:
     void slotOpenBenchmarkFile();
@@ -28,11 +29,13 @@ private:
     QLabel* dynamicGPSFileNameLabel;
     QString dynamicFile;
     QButtonGroup* type_bgroup;
+
     QGroupBox* createBenchmarkCoordGroup();
     QLineEdit* longitude_lineEdit;
     QLineEdit* latitude_lineEdit;
     QLabel* staticGPSFileNameLabel;
     QString staticFile;
+
     QGroupBox* createResultsGroup();
     QButtonGroup* format_bgroup;
     QButtonGroup* geometry_bgroup;
@@ -48,6 +51,8 @@ private:
     void createData(const QString&, QMap<int, QList<double> >*);
 
     QSettings* settings;
+    void readSettings();
+    void writeSettings();
 //    QString genGGA(const QByteArray& time, const double& lat, const double& lng);
 };
 
