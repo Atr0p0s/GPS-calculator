@@ -1,39 +1,40 @@
 #include "NMEA_Struct.h"
-#include "stdlib.h"
-#include<stdarg.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdarg.h>
 
-# define ARRAY_SIZE(a)                  (sizeof(a)/sizeof(a)[0])
+# define ARRAY_SIZE(a) (sizeof(a)/sizeof(a)[0])
 
 typedef void BmNmeaRxHandler(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data);
 
 static double stof(const char* s){
-  double rez = 0, fact = 1;
+    double rez = 0, fact = 1;
 
-  if (*s == '-')
-  {
-    s++;
-    fact = -1;
-  };
-
-  int point_seen = 0;
-  for (point_seen = 0; *s; s++)
-  {
-    if (*s == '.')
+    if (*s == '-')
     {
-      point_seen = 1;
-      continue;
+        s++;
+        fact = -1;
     };
 
-    int d = *s - '0';
-
-    if (d >= 0 && d <= 9)
+    int point_seen = 0;
+    for (point_seen = 0; *s; s++)
     {
-      if (point_seen) fact /= 10.0f;
-      rez = rez * 10.0f + (double)d;
-    };
-  }
+        if (*s == '.')
+        {
+            point_seen = 1;
+            continue;
+        };
 
-  return rez * fact;
+        int d = *s - '0';
+
+        if (d >= 0 && d <= 9)
+        {
+            if (point_seen) fact /= 10.0f;
+            rez = rez * 10.0f + (double)d;
+        };
+    }
+
+    return rez * fact;
 }
 
 static double toGrad(const double Grad_Min)
@@ -176,213 +177,13 @@ static void rx_pohpr(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
     }
 }
 
-static void rx_pougt(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-    if(NMEA_Data->POUGT.satellite)
-    {
-        NMEA_Data->POUGT.satellite = 0;
-
-        int i = strlen(msg->data) + 1;
-        NMEA_Data->POUGT.satellite      = (uint8_t)atoi(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->POUGT.param          = (uint8_t)atoi(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->POUGT.status         = msg->data[i];
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->POUGT.time           = (uint32_t)atoi(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->POUGT.Course         = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->POUGT.X1             = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->POUGT.X2             = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->POUGT.base_line      = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->POUGT.diff           = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->POUGT.base_satellite = stof(&msg->data[i]);
-    }
-}
-
-static void rx_podst(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-
-}
-
-static void rx_pondm(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-    if(NMEA_Data->PONDM.Course)
-    {
-        NMEA_Data->PONDM.Course = 0;
-
-        int i = strlen(msg->data) + 1;
-        NMEA_Data->PONDM.Course         = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PONDM.Roll          = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PONDM.Pitch           = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PONDM.Distance_1     = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PONDM.Distance_2     = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PONDM.Distance_3     = stof(&msg->data[i]);
-    }
-}
-
-static void rx_porza(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-    if(NMEA_Data->PORZA.Number)
-    {
-        NMEA_Data->PORZA.Number = 0;
-
-        int i = strlen(msg->data) + 1;
-        NMEA_Data->PORZA.Number         = (uint8_t)atoi(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PORZA.Boudrate       = (uint32_t)atoi(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PORZA.Proto          = (uint8_t)atoi(&msg->data[i]);
-    }
-}
-
-static void rx_porzb(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-
-}
-
-static void rx_pongl(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-
-}
-
-static void rx_pnvgo(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-    if(NMEA_Data->PNVGO.Signal)
-    {
-        NMEA_Data->PNVGO.Signal = 0;
-
-        NMEA_Data->PNVGO.Signal = true;
-
-        int i = strlen(msg->data) + 1;
-        NMEA_Data->PNVGO.Pitch          = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PNVGO.PitchI         = stof(&msg->data[i]);
-    }
-}
-
-
-static void rx_pnvgver(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-    if(NMEA_Data->PNVGVER.Signal)
-    {
-        NMEA_Data->PNVGVER.Signal = 0;
-
-        NMEA_Data->PNVGVER.Signal = true;
-
-        int i = strlen(msg->data) + 1;
-        strncpy(NMEA_Data->PNVGVER.PNVGVER_Soft, &msg->data[i], 11);
-
-        i += strlen(&msg->data[i]) + 1;
-        strncpy(NMEA_Data->PNVGVER.PNVGVER_NSoft_1, &msg->data[i], 5);
-
-        i += strlen(&msg->data[i]) + 1;
-        strncpy(NMEA_Data->PNVGVER.PNVGVER_NSoft_2, &msg->data[i], 5);
-
-        i += strlen(&msg->data[i]) + 1;
-        strncpy(NMEA_Data->PNVGVER.PNVGVER_NSoft_3, &msg->data[i], 5);
-
-        i += strlen(&msg->data[i]) + 1;
-        strncpy(NMEA_Data->PNVGVER.PNVGVER_Linux_Kernel, &msg->data[i], 30);
-    }
-}
-
-static void rx_pnvgs(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-    if(NMEA_Data->PNVGS.Signal)
-    {
-        NMEA_Data->PNVGS.Signal = 0;
-
-        NMEA_Data->PNVGS.Signal = true;
-
-        int i = strlen(msg->data) + 1;
-        NMEA_Data->PNVGS.Loss          = stof(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PNVGS.Seach         = stof(&msg->data[i]);
-    }
-}
-
-static void rx_pnvgr(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-    if(NMEA_Data->PNVGR.Status)
-    {
-        NMEA_Data->PNVGR.Status = 0;
-        int i = strlen(msg->data) + 1;
-        NMEA_Data->PNVGR.Status          = (uint8_t)atoi(&msg->data[i]);
-    }
-}
-
-static void rx_porzv(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-        int i = strlen(msg->data) + 1;
-        NMEA_Data->PORZV.Stat = msg->data[i];
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PORZV.Time = atoi(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PORZV.Day = atoi(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PORZV.Mounth = atoi(&msg->data[i]);
-
-        i += strlen(&msg->data[i]) + 1;
-        NMEA_Data->PORZV.Year = atoi(&msg->data[i]);
-}
-
-static void rx_gpzda(BmNmeaMessage *msg, struct NMEA_Data *NMEA_Data)
-{
-    NMEA_Data->GPZDA.k = 1;
-}
-
-
 static struct {
     const char *templ;
     BmNmeaRxHandler *handler;
 } rx_handlers[] = {
     {"**GGA",   rx_gga },
     {"**RMC",   rx_rmc },
-    {"POHPR",   rx_pohpr},
-    {"POUGT",   rx_pougt},
-    {"PODST",   rx_podst},
-    {"PONDM",   rx_pondm},
-    {"PORZA",   rx_porza},
-    {"PORZB",   rx_porzb},
-    {"PONGL",   rx_pongl},
-    {"PNVGO",   rx_pnvgo},
-    {"PNVGVER", rx_pnvgver},
-    {"PNVGS",   rx_pnvgs},
-    {"PNVGR",   rx_pnvgr},
-    {"PORZV",   rx_porzv},
-    {"**ZDA",   rx_gpzda}
+    {"POHPR",   rx_pohpr}
 };
 
 static bool nmea_parse(BmNmeaMessage *msg) {
@@ -443,7 +244,7 @@ void nmea_recv(void *ctx, const char *data, size_t size, struct NMEA_Data *NMEA_
                     if (tpl[j] != '*' && msg->cursor[j] != tpl[j])
                         goto next;
                 rx_handlers[i].handler(msg, NMEA_Data);
-                next:;
+            next:;
             }
         }
         msg->cursor = NULL;

@@ -10,7 +10,6 @@
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QPushButton>
-#include <QDebug>
 
 #include "Koord/Coord_QW.h"
 #include "gpscalculator.h"
@@ -319,14 +318,19 @@ void GPScalculator::readSettings()
     if (geometryButtonId != -1) {
         geometry_bgroup->button(geometryButtonId)->setChecked(true);
     }
-    qDebug() << "read" << formatButtonId << geometryButtonId;
+
+    latitude_lineEdit->setText(settings->value("benchLat", "").toString());
+    longitude_lineEdit->setText(settings->value("benchLng", "").toString());
 }
 
 void GPScalculator::writeSettings()
 {
-    qDebug() << "write" << format_bgroup->checkedId() << geometry_bgroup->checkedId();
     settings->setValue("format_group", format_bgroup->checkedId());
     settings->setValue("geometry_group", geometry_bgroup->checkedId());
+    if (latitude_lineEdit->hasAcceptableInput() && longitude_lineEdit->hasAcceptableInput()) {
+        settings->setValue("benchLat", latitude_lineEdit->text());
+        settings->setValue("benchLng", longitude_lineEdit->text());
+    }
 }
 
 void GPScalculator::slotCalculateGPS()
