@@ -11,9 +11,9 @@
 #include <QGroupBox>
 #include <QPushButton>
 
-#include "Koord/Coord_QW.h"
+#include "benchCoord/Coord_QW.h"
 #include "gpscalculator.h"
-#include "lib/NMEA_Struct.h"
+#include "nmeaParser/NMEA_Struct.h"
 
 GPScalculator::GPScalculator(QSettings* S, QWidget* parent)
     : QWidget{parent}, settings{S}

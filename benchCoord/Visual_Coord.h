@@ -4,7 +4,7 @@
 #include <QWidget>
 #include <QPaintEvent>
 #include <QList>
-#include "lib/NMEA_Struct.h"
+#include "nmeaParser/NMEA_Struct.h"
 
 #define Grad_to_M 60*1853.25
 #define PI 3.1415926535897932384626433832795028841971

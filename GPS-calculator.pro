@@ -11,6 +11,7 @@ CONFIG += c++17
 SOURCES += \
     benchCoord/Coord_QW.cpp \
     benchCoord/Visual_Coord.cpp \
+    serialPort/portview.cpp \
     gpscalculator.cpp \
     howtouse.cpp \
     nmeaParser/parsenmea.c \
@@ -20,6 +21,7 @@ SOURCES += \
 HEADERS += \
     benchCoord/Coord_QW.h \
     benchCoord/Visual_Coord.h \
+    serialPort/portview.h \
     gpscalculator.h \
     howtouse.h \
     nmeaParser/NMEA_Struct.h \
