@@ -8,6 +8,7 @@
 #include <QPointer>
 #include <QButtonGroup>
 #include <QLabel>
+#include <QFile>
 
 class Coord_QW;
 
@@ -28,7 +29,8 @@ private:
     QGroupBox* createDynamicCoordGroup();
     QLabel* dynamicGPSFileNameLabel;
     QString dynamicFile;
-    QButtonGroup* type_bgroup;
+    QButtonGroup* ext_bgroup;
+    QString filesDir;
 
     QGroupBox* createBenchmarkCoordGroup();
     QLineEdit* longitude_lineEdit;
@@ -47,8 +49,10 @@ private:
 
     QPointer<Coord_QW> coord;
     void calcCoordinates();
-    void saveToFile();
+    void saveToFile(bool);
     void createData(const QString&, QMap<int, QList<double> >*);
+    void parseNMEA(QFile*, QMap<int, QList<double> >*);
+    void parseCSV(QFile*, QMap<int, QList<double> >*);
 
     QSettings* settings;
     void readSettings();

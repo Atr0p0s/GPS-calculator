@@ -1,6 +1,5 @@
 #include <QDoubleValidator>
 #include <QComboBox>
-#include <QFile>
 #include <QFileDialog>
 #include <QTextStream>
 #include <QMessageBox>
@@ -10,6 +9,8 @@
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QPushButton>
+#include <QTime>
+#include <QDateTime>
 
 #include "benchCoord/Coord_QW.h"
 #include "gpscalculator.h"
@@ -40,21 +41,21 @@ QGroupBox* GPScalculator::createDynamicCoordGroup()
 
     QPushButton* dynamicGPSButton = new QPushButton(tr("Load File"));
     connect(dynamicGPSButton, &QPushButton::pressed, this,
-            [this](){  dynamicFile = QFileDialog::getOpenFileName(this, tr("Open File"), "", /*"NME (*.nme);;*/"All Files (*)");
+            [this](){  dynamicFile = QFileDialog::getOpenFileName(this, tr("Open File"), filesDir, /*"NME (*.nme);;*/"All Files (*)");
                 if (!dynamicFile.isEmpty()) {
                     dynamicGPSFileNameLabel->setText(QFileInfo(dynamicFile).fileName());
+                    filesDir = QFileInfo(dynamicFile).absolutePath();
+                    m_dynamic_data.clear();
                 }
             } );
 
     QLabel* fileTypeLabel = new QLabel(tr("File type:"));
-    type_bgroup = new QButtonGroup(this);
+    ext_bgroup = new QButtonGroup(this);
     QRadioButton* nmeaButton = new QRadioButton("NMEA", this);
     QRadioButton* csvButton = new QRadioButton("CSV", this);
-    type_bgroup->addButton(nmeaButton, 1);
-    type_bgroup->addButton(csvButton, 2);
+    ext_bgroup->addButton(nmeaButton, 1);
+    ext_bgroup->addButton(csvButton, 2);
     nmeaButton->setChecked(true);
-    nmeaButton->setEnabled(false);
-    csvButton->setEnabled(false);
 //QPushButton* createNMEAButton = new QPushButton("create nmea");
 //    connect(createNMEAButton, &QPushButton::pressed, this, &GPScalculator::nmeaFromCSV);
     QGridLayout* grid = new QGridLayout();
@@ -151,9 +152,10 @@ QGroupBox* GPScalculator::createBenchmarkCoordGroup()
     staticGPSFileNameLabel = new QLabel(tr("File is not loaded"));
     QPushButton* staticGPSButton = new QPushButton(tr("Load File"));
     connect(staticGPSButton, &QPushButton::pressed, this,
-            [this](){  staticFile = QFileDialog::getOpenFileName(this, tr("Open File"), "", /*"NME (*.nme);;*/"All Files (*)");
+            [this](){  staticFile = QFileDialog::getOpenFileName(this, tr("Open File"), filesDir, /*"NME (*.nme);;*/"All Files (*)");
                 if (!staticFile.isEmpty()) {
                     staticGPSFileNameLabel->setText(QFileInfo(staticFile).fileName());
+                    m_static_data.clear();
                 }
             } );
 
@@ -214,11 +216,11 @@ QGroupBox* GPScalculator::createResultsGroup()
 
 void GPScalculator::slotOpenBenchmarkFile()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), "", /*"NME (*.nme);;*/"All Files (*)");
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), filesDir, /*"NME (*.nme);;*/"All Files (*)");
     if (fileName != "") {
         QFile file;
         file.setFileName(fileName);
-        if (!file.open(QIODevice::ReadOnly)) {
+        if (!file.open(QIODevice::ReadOnly | QIODeviceBase::Text)) {
             QMessageBox::critical(0, "Error", tr("Cannot open source file ")+fileName);
         } else {
             coord = new Coord_QW(settings, this, Qt::Window);
@@ -269,41 +271,118 @@ void GPScalculator::createData(const QString& fileName, QMap<int, QList<double> 
     if (fileName != "") {
         QFile file;
         file.setFileName(fileName);
-        if (!file.open(QIODevice::ReadOnly)) {
+        if (!file.open(QIODevice::ReadOnly | QIODeviceBase::Text)) {
             QMessageBox::critical(0, "Error", tr("Cannot open source file ")+fileName);
         } else {
-            QByteArray data = file.readAll();
-            QString Text_NMEA = QString::fromLocal8Bit(data);
-            QStringList Text_NMEA_List = Text_NMEA.split("\n");
-
-            struct NMEA_Data NMEA_D, NMEA_Data_Settings;
-            memset(&NMEA_Data_Settings, 0, sizeof(struct NMEA_Data));
-            NMEA_Data_Settings.GPGGA.time = 1;
-            BmUartProtoNmea ctx;
-            memset(&ctx, 0, sizeof(BmUartProtoNmea));
-
-            for(int i = 0; i < Text_NMEA_List.size(); i++) {
-                if(Text_NMEA_List[i].size() > 0) {
-                    QString Z = *(Text_NMEA_List[i].end() - 1);
-
-                    if(Z != "\r") {
-                        Text_NMEA_List[i] += "\r";
-                    }
-
-                    Text_NMEA = Text_NMEA_List[i] + "\n";
-
-                    NMEA_D = NMEA_Data_Settings;
-                    char data2[4096];
-                    memset(data2, 0, 4096);
-                    strncpy(data2, Text_NMEA.toLocal8Bit().data(), sizeof(data2));
-                    nmea_recv(&ctx, data2, strlen(data2), &NMEA_D);
-                    if(NMEA_D.GPGGA.latitude && NMEA_D.GPGGA.longitude) {
-                        (*pmap)[static_cast<int>(NMEA_D.GPGGA.time)] = QList<double>{NMEA_D.GPGGA.latitude, NMEA_D.GPGGA.longitude};
-                    }
-                }
+            QString ext = fileName.section(".", -1);
+            if (ext == "nmea") {
+                parseNMEA(&file, pmap);
+            } else if (ext == "csv" || ext_bgroup->checkedId() == 2) {
+                    parseCSV(&file, pmap);
+            } else {
+                parseNMEA(&file, pmap);
             }
+
             file.close();
         }
+    }
+}
+
+void GPScalculator::parseNMEA(QFile* file, QMap<int, QList<double> >* pmap)
+{
+    QByteArray data = file->readAll();
+    QString Text_NMEA = QString::fromLocal8Bit(data);
+    QStringList Text_NMEA_List = Text_NMEA.split("\n");
+
+    struct NMEA_Data NMEA_D, NMEA_Data_Settings;
+    memset(&NMEA_Data_Settings, 0, sizeof(struct NMEA_Data));
+    NMEA_Data_Settings.GPGGA.time = 1;
+    BmUartProtoNmea ctx;
+    memset(&ctx, 0, sizeof(BmUartProtoNmea));
+
+    for(int i = 0; i < Text_NMEA_List.size(); i++) {
+        if(Text_NMEA_List[i].size() > 0) {
+            QString Z = *(Text_NMEA_List[i].end() - 1);
+
+            if(Z != "\r") {
+                Text_NMEA_List[i] += "\r";
+            }
+            Text_NMEA = Text_NMEA_List[i] + "\n";
+
+            NMEA_D = NMEA_Data_Settings;
+            char data2[4096];
+            memset(data2, 0, 4096);
+            strncpy(data2, Text_NMEA.toLocal8Bit().data(), sizeof(data2));
+            nmea_recv(&ctx, data2, strlen(data2), &NMEA_D);
+            if(NMEA_D.GPGGA.latitude && NMEA_D.GPGGA.longitude) {
+                (*pmap)[static_cast<int>(NMEA_D.GPGGA.time)] = QList<double>{NMEA_D.GPGGA.latitude, NMEA_D.GPGGA.longitude};
+            }
+        }
+    }
+}
+
+void GPScalculator::parseCSV(QFile* file, QMap<int, QList<double> >* pmap)
+{
+    int labelNumber = 0;
+    int latIndex = -1;
+    int lonIndex = -1;
+    int timeIndex = -1;
+    QTextStream in(file);
+    while (!in.atEnd()) {
+        const QString line = file->readLine();
+        const QStringView lineView{line};
+        if (lineView.trimmed().isEmpty()) {
+            continue;
+        }
+        int count = 0;
+        for (QStringView token : lineView.split(',')){
+            if (token == QString::fromUtf8("\"lat\"")) {
+                latIndex = count;
+            }
+            if (token == QString::fromUtf8("\"lon\"")) {
+                lonIndex = count;
+            }
+            if (token == QString::fromUtf8("\"time\"")) {
+                timeIndex = count;
+            }
+            ++count;
+        }
+        labelNumber = count;
+        break;
+    }
+
+    if (latIndex == -1 || lonIndex == -1 || timeIndex == -1) {
+        return;
+    }
+    bool ok;
+    if (in.atEnd()) {
+        return;
+    }
+    const QString data = in.readAll();
+    const QStringView dataView{data};
+    for (QStringView line : dataView.trimmed().split('\n')){
+        const QList<QStringView> tokens = line.split(',');
+        if (tokens.size() != labelNumber) {
+            continue;
+        }
+        QStringView temp = tokens.at(timeIndex);
+        QStringView timeString = temp.sliced(1, temp.size()-2);
+        QDateTime dateTime = QDateTime::fromString(timeString, Qt::ISODate).toUTC();
+        if (!dateTime.isValid()) {
+            continue;
+        }
+        QTime time = dateTime.time();
+        int joinedTime = time.hour() * 10000 + time.minute() * 100 + time.second();
+
+        temp = tokens.at(latIndex);
+        double latitude = temp.sliced(1, temp.size()-2).toDouble(&ok);
+        temp = tokens.at(lonIndex);
+        double longitude = temp.sliced(1, temp.size()-2).toDouble(&ok);
+        if (!ok) {
+            continue;
+        }
+
+        (*pmap)[joinedTime] = QList<double>{latitude, longitude};
     }
 }
 
@@ -314,6 +393,11 @@ void GPScalculator::readSettings()
         format_bgroup->button(formatButtonId)->setChecked(true);
     }
 
+    const int extensionButtonId = settings->value("extension_group", -1).toInt();
+    if (extensionButtonId != -1) {
+        ext_bgroup->button(extensionButtonId)->setChecked(true);
+    }
+
     const int geometryButtonId = settings->value("geometry_group", -1).toInt();
     if (geometryButtonId != -1) {
         geometry_bgroup->button(geometryButtonId)->setChecked(true);
@@ -321,15 +405,22 @@ void GPScalculator::readSettings()
 
     latitude_lineEdit->setText(settings->value("benchLat", "").toString());
     longitude_lineEdit->setText(settings->value("benchLng", "").toString());
+
+    filesDir = settings->value("files_dir", "").toString();
 }
 
 void GPScalculator::writeSettings()
 {
     settings->setValue("format_group", format_bgroup->checkedId());
     settings->setValue("geometry_group", geometry_bgroup->checkedId());
+    settings->setValue("extension_group", ext_bgroup->checkedId());
+    settings->setValue("files_dir", filesDir);
     if (latitude_lineEdit->hasAcceptableInput() && longitude_lineEdit->hasAcceptableInput()) {
         settings->setValue("benchLat", latitude_lineEdit->text());
         settings->setValue("benchLng", longitude_lineEdit->text());
+    } else {
+        settings->setValue("benchLat", "");
+        settings->setValue("benchLng", "");
     }
 }
 
@@ -339,8 +430,7 @@ void GPScalculator::slotCalculateGPS()
         if (!staticFile.isEmpty()) {
             if (!(latitude_lineEdit->text().isEmpty() && longitude_lineEdit->text().isEmpty())) {
                 if (latitude_lineEdit->hasAcceptableInput() && longitude_lineEdit->hasAcceptableInput()) {
-                    calcCoordinates();
-                    saveToFile();
+                    saveToFile(true);
                 } else {
                     QMessageBox::information(0, "Information", tr("Unacceptable benchmark coordinates"));
                 }
@@ -349,7 +439,7 @@ void GPScalculator::slotCalculateGPS()
                                                               "\nDo you want to generate GeoJSON without adjusting the coordinates?"),
                                              QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
                 if (n == QMessageBox::Yes) {
-                    saveToFile();
+                    saveToFile(false);
                 }
             }
         } else if (!(latitude_lineEdit->text().isEmpty() && longitude_lineEdit->text().isEmpty())) {
@@ -358,12 +448,12 @@ void GPScalculator::slotCalculateGPS()
                                             "\nDo you want to generate GeoJSON without adjusting the coordinates?"),
                                          QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
             if (n == QMessageBox::Yes) {
-                saveToFile();
+                saveToFile(false);
             }
         } else {
             QMessageBox::information(0, "Information", tr("GeoJSON will be generated without "
                                                           "adjusting the coordinates"));
-            saveToFile();
+            saveToFile(false);
         }
     } else {
         QMessageBox::information(0, "Information", tr("Load a file for generating GeoJSON from it."));
@@ -386,9 +476,11 @@ void GPScalculator::calcCoordinates()
     }
 }
 
-void GPScalculator::saveToFile()
+void GPScalculator::saveToFile(bool withCalculations)
 {
-    if (m_dynamic_data.isEmpty()) {
+    if (withCalculations){
+        calcCoordinates();
+    } else {
         createData(dynamicFile, &m_dynamic_data);
     }
     QString date = QDate::currentDate().toString("yyyy.MM.dd");
@@ -408,10 +500,15 @@ void GPScalculator::saveToFile()
         }
         QFile file;
         file.setFileName(fileName);
-        if (!file.open(QIODevice::WriteOnly)) {
+        if (!file.open(QIODevice::WriteOnly | QIODeviceBase::Text)) {
             QMessageBox::critical(0, "Error", tr("Cannot open source file ")+fileName);
         } else {
             QTextStream stream(&file);
+            if (m_dynamic_data.isEmpty()) {
+                stream << "No correct points in the source file.";
+                file.close();
+                return;
+            }
             stream.setRealNumberPrecision(13);
             stream << "{\n  \"type\": \"FeatureCollection\",\n  \"features\": [\n";
             stream << "    {\n      \"type\": \"Feature\",\n      \"properties\": {},\n";
@@ -461,7 +558,9 @@ void GPScalculator::slotShowMap()
 {
     QString mapUrl = "http://geojson.io";
     if (!(latitude_lineEdit->text().isEmpty() && longitude_lineEdit->text().isEmpty())) {
-        mapUrl += "/#map=5/" + latitude_lineEdit->text() + "/" + longitude_lineEdit->text();
+        if (latitude_lineEdit->hasAcceptableInput() && longitude_lineEdit->hasAcceptableInput()) {
+            mapUrl += "/#map=5/" + latitude_lineEdit->text() + "/" + longitude_lineEdit->text();
+        }
     }
     QDesktopServices::openUrl(QUrl(mapUrl));
 }

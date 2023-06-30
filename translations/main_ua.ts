@@ -129,7 +129,7 @@ Differential mode.</source>
     <message>
         <location filename="gpscalculator.cpp" line="50"/>
         <source>File type:</source>
-        <translation>Тип файла:</translation>
+        <translation>Тип файлу:</translation>
     </message>
     <message>
         <location filename="gpscalculator.cpp" line="134"/>
