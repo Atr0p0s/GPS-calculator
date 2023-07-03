@@ -430,7 +430,7 @@ void GPScalculator::slotCalculateGPS()
         if (!staticFile.isEmpty()) {
             if (!(latitude_lineEdit->text().isEmpty() && longitude_lineEdit->text().isEmpty())) {
                 if (latitude_lineEdit->hasAcceptableInput() && longitude_lineEdit->hasAcceptableInput()) {
-                    saveToFile(true);
+                    saveToFile(Calculations_t::DoCalculations);
                 } else {
                     QMessageBox::information(0, "Information", tr("Unacceptable benchmark coordinates"));
                 }
@@ -439,7 +439,7 @@ void GPScalculator::slotCalculateGPS()
                                                               "\nDo you want to generate GeoJSON without adjusting the coordinates?"),
                                              QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
                 if (n == QMessageBox::Yes) {
-                    saveToFile(false);
+                    saveToFile(Calculations_t::WithoutCalculations);
                 }
             }
         } else if (!(latitude_lineEdit->text().isEmpty() && longitude_lineEdit->text().isEmpty())) {
@@ -448,12 +448,12 @@ void GPScalculator::slotCalculateGPS()
                                             "\nDo you want to generate GeoJSON without adjusting the coordinates?"),
                                          QMessageBox::Yes | QMessageBox::No, QMessageBox::Yes);
             if (n == QMessageBox::Yes) {
-                saveToFile(false);
+                saveToFile(Calculations_t::WithoutCalculations);
             }
         } else {
             QMessageBox::information(0, "Information", tr("GeoJSON will be generated without "
                                                           "adjusting the coordinates"));
-            saveToFile(false);
+            saveToFile(Calculations_t::WithoutCalculations);
         }
     } else {
         QMessageBox::information(0, "Information", tr("Load a file for generating GeoJSON from it."));
@@ -476,13 +476,10 @@ void GPScalculator::calcCoordinates()
     }
 }
 
-void GPScalculator::saveToFile(bool withCalculations)
+void GPScalculator::saveToFile(Calculations_t calc)
 {
-    if (withCalculations){
-        calcCoordinates();
-    } else {
-        createData(dynamicFile, &m_dynamic_data);
-    }
+    calc == Calculations_t::DoCalculations ? calcCoordinates() : createData(dynamicFile, &m_dynamic_data);
+
     QString date = QDate::currentDate().toString("yyyy.MM.dd");
 
 #ifdef linux

@@ -15,6 +15,9 @@ class Coord_QW;
 class GPScalculator : public QWidget
 {
     Q_OBJECT
+
+    enum class Calculations_t { WithoutCalculations, DoCalculations };
+
 public:
     explicit GPScalculator(QSettings*, QWidget* parent = nullptr);
     ~GPScalculator();
@@ -49,7 +52,7 @@ private:
 
     QPointer<Coord_QW> coord;
     void calcCoordinates();
-    void saveToFile(bool);
+    void saveToFile(Calculations_t);
     void createData(const QString&, QMap<int, QList<double> >*);
     void parseNMEA(QFile*, QMap<int, QList<double> >*);
     void parseCSV(QFile*, QMap<int, QList<double> >*);
