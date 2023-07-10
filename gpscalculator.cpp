@@ -238,14 +238,14 @@ void GPScalculator::slotOpenBenchmarkFile()
             memset(&ctx, 0, sizeof(BmUartProtoNmea));
 
             for(int i = 0; i < Text_NMEA_List.size(); i++) {
-                if(Text_NMEA_List[i].size() > 0) {
-                    QString Z = *(Text_NMEA_List[i].end() - 1);
+                if(Text_NMEA_List.at(i).size() > 0) {
+                    QString Z = *(Text_NMEA_List.at(i).cend() - 1);
 
                     if(Z != "\r") {
                         Text_NMEA_List[i] += "\r";
                     }
 
-                    Text_NMEA = Text_NMEA_List[i] + "\n";
+                    Text_NMEA = Text_NMEA_List.at(i) + "\n";
 
                     NMEA_D = NMEA_Data_Settings;
                     char data2[4096];
@@ -278,7 +278,7 @@ void GPScalculator::createData(const QString& fileName, QMap<int, QList<double> 
             if (ext == "nmea") {
                 parseNMEA(&file, pmap);
             } else if (ext == "csv" || ext_bgroup->checkedId() == 2) {
-                    parseCSV(&file, pmap);
+                parseCSV(&file, pmap);
             } else {
                 parseNMEA(&file, pmap);
             }
@@ -301,13 +301,13 @@ void GPScalculator::parseNMEA(QFile* file, QMap<int, QList<double> >* pmap)
     memset(&ctx, 0, sizeof(BmUartProtoNmea));
 
     for(int i = 0; i < Text_NMEA_List.size(); i++) {
-        if(Text_NMEA_List[i].size() > 0) {
-            QString Z = *(Text_NMEA_List[i].end() - 1);
+        if(Text_NMEA_List.at(i).size() > 0) {
+            QString Z = *(Text_NMEA_List.at(i).cend() - 1);
 
             if(Z != "\r") {
                 Text_NMEA_List[i] += "\r";
             }
-            Text_NMEA = Text_NMEA_List[i] + "\n";
+            Text_NMEA = Text_NMEA_List.at(i) + "\n";
 
             NMEA_D = NMEA_Data_Settings;
             char data2[4096];
@@ -467,9 +467,11 @@ void GPScalculator::calcCoordinates()
     m_benchmark_latitude = latitude_lineEdit->text().toDouble();
     m_benchmark_longitude = longitude_lineEdit->text().toDouble();
     for (auto i = m_dynamic_data.begin(), end = m_dynamic_data.end(); i != end; ++i) {
-        if (m_static_data.contains(i.key())) {
-            i.value()[0] += m_benchmark_latitude - m_static_data.value(i.key()).at(0);
-            i.value()[1] += m_benchmark_longitude - m_static_data.value(i.key()).at(1);
+        const auto& static_find = m_static_data.constFind(i.key());
+        if (static_find != m_static_data.cend()) {
+            const auto& static_val = static_find.value();
+            i.value()[0] += m_benchmark_latitude - static_val.at(0);
+            i.value()[1] += m_benchmark_longitude - static_val.at(1);
         } else {
             m_dynamic_data.remove(i.key());
         }
@@ -535,12 +537,14 @@ void GPScalculator::saveToFile(Calculations_t calc)
                 if (count++ % 4 == 0) {
                     stream << "\n          ";
                 }
-                stream << "[" << i.value()[index_1] << "," << i.value()[index_2] << "]";
+                const auto& i_value = i.value();
+                stream << "[" << i_value.at(index_1) << "," << i_value.at(index_2) << "]";
                 comma = true;
             }
             if (geometry_bgroup->checkedId() == 2) {
-                if (m_dynamic_data.first() != m_dynamic_data.last()) {
-                    stream << ",[" << m_dynamic_data.first()[index_1] << "," << m_dynamic_data.first()[index_2] << "]";
+                const auto& first_val = m_dynamic_data.first();
+                if (first_val != m_dynamic_data.last()) {
+                    stream << ",[" << first_val.at(index_1) << "," << first_val.at(index_2) << "]";
                 }
                 stream << "\n          ]";
             }
