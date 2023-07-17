@@ -75,11 +75,6 @@ void MainWindow::about()
                           "using data from an additional GPS sensor."));
 }
 
-void MainWindow::sizeqwe()
-{
-    qDebug() << size();
-}
-
 void MainWindow::createStatusBar()
 {
     statusBar()->showMessage(tr("Ready"));

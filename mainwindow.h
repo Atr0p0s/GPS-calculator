@@ -32,7 +32,6 @@ private:
     void writeSettings();
     void about();
     void howToUse();
-    void sizeqwe();
 
     QSettings* settings;
     GPScalculator* gpscalc;
